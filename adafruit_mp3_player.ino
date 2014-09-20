@@ -50,11 +50,10 @@ Adafruit_VS1053_FilePlayer musicPlayer = Adafruit_VS1053_FilePlayer(SHIELD_CS, S
 
 int volume = 20;
 
-String fileList[10];
+int fileIndex = 0;
+int fileNumber = 0;
 
-void logger(char message[]) {
-  Serial.println(F(""));
-}
+char* fileList[10];
 
 // update or decrease volume if we get an 'u' or 'd' char on the serial console
 void updateVolume(char command) {
@@ -65,23 +64,23 @@ void updateVolume(char command) {
   } else {
     return;
   }
-  Serial.print("[INFO] - Volume=");
+  Serial.print("[DEBUG] - Volume=");
   Serial.println(volume);
 
   musicPlayer.setVolume(volume, volume);
 }
 
-// stop or pause read if we get an 's' or 'p' char on the serial console, 
+// stop or pause read if we get an 's' or 'p' char on the serial console
 void updateState(char command) {
   if ('s' == command) {
     musicPlayer.stopPlaying();
   }
   if ('p' == command) {
     if (!musicPlayer.paused()) {
-      Serial.println("[INFO] - Paused");
+      Serial.println("[DEBUG] - Paused");
       musicPlayer.pausePlaying(true);
     } else {
-      Serial.println("[INFO] - Resumed");
+      Serial.println("[DEBUG] - Resumed");
       musicPlayer.pausePlaying(false);
     }
   }
@@ -101,26 +100,36 @@ void setup() {
 
   // initialise the SD card
   SD.begin(CARDCS);
-  
-  // set volume for left, right channels. lower numbers == louder volume!
-  musicPlayer.setVolume(volume, volume);
 
   // timer interrupts are not suggested, better to use DREQ interrupt!
   //musicPlayer.useInterrupt(VS1053_FILEPLAYER_TIMER0_INT); // timer int
 
   // if DREQ is on an interrupt pin (on uno, #2 or #3) we can do background audio playing
   musicPlayer.useInterrupt(VS1053_FILEPLAYER_PIN_INT);  // DREQ int
-  
+
   // play one file, don't return until complete
   // Serial.println(F("Playing track 001"));
   // musicPlayer.playFullFile("track1.mp3");
 
+  // set volume for left, right channels. lower numbers == louder volume!
+  musicPlayer.setVolume(volume, volume);
+
   createFileList();
 
-  // play another file in the background, REQUIRES interrupts!
-  Serial.println(F("[DEBUG] - Playing track1.mp3 without blocking"));
-  musicPlayer.startPlayingFile("TRACK2.MP3");
-  Serial.println(F("[DEBUG] - Not blocking"));
+  Serial.print("[DEBUG] - Number of file=");
+  Serial.println(fileNumber);
+
+  if (!fileList[fileIndex]) {
+     Serial.println(F("[DEBUG] - File not found in directory"));
+     while(1);
+  }
+  // begin player with track in the background, REQUIRES interrupts!
+  //Serial.println(F("[DEBUG] - Playing track1.mp3 without blocking"));
+
+  Serial.print("[DEBUG] - Reading=");
+  Serial.println(fileList[fileIndex]);
+
+  musicPlayer.startPlayingFile(fileList[fileIndex]);
 }
 
 void loop() {
@@ -149,10 +158,12 @@ void createFileList() {
     if (!entry) {
       break;
     }
-    fileList[i] = entry.name();
+    fileList[i] = strdup(entry.name());
 
     Serial.print("[DEBUG] - Found file=");
     Serial.println(fileList[i]);
+
+    fileNumber++;
 
     entry.close();
   }
