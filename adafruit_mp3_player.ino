@@ -26,7 +26,7 @@
 // #define CLK             13     // SPI Clock, shared with SD card
 // #define MISO            12     // Input data, from VS1053/SD card
 // #define MOSI            11     // Output data, to VS1053/SD card
-// Connect CLK, MISO and MOSI to hardware SPI pins. 
+// Connect CLK, MISO and MOSI to hardware SPI . 
 // See http://arduino.cc/en/Reference/SPI "Connections"
 
 // these are the pins used for the breakout example
@@ -43,9 +43,6 @@
 // DREQ should be an Int pin, see http://arduino.cc/en/Reference/attachInterrupt
 #define DREQ               3      // VS1053 Data request, ideally an Interrupt pin
 
-// create breakout-example object!
-// Adafruit_VS1053_FilePlayer musicPlayer = Adafruit_VS1053_FilePlayer(BREAKOUT_RESET, BREAKOUT_CS, BREAKOUT_DCS, DREQ, CARDCS);
-// create shield-example object!
 Adafruit_VS1053_FilePlayer musicPlayer = Adafruit_VS1053_FilePlayer(SHIELD_CS, SHIELD_DCS, DREQ, CARDCS);
 
 int volume = 20;
@@ -72,16 +69,31 @@ void updateVolume(char command) {
 
 // stop or pause read if we get an 's' or 'p' char on the serial console
 void updateState(char command) {
+  if (('b' == command) && (fileIndex > 0)) {
+    musicPlayer.startPlayingFile(fileList[--fileIndex]);
+    Serial.print("[DEBUG] - Back command, fileIndex=");
+    Serial.println(fileIndex);
+    Serial.print("[DEBUG] - Reading=");
+    Serial.println(fileList[fileIndex]);
+  }
+  if (('f' == command) && (fileIndex < fileNumber - 1)) {
+    musicPlayer.startPlayingFile(fileList[++fileIndex]);
+    Serial.print("[DEBUG] - Forward command, fileIndex=");
+    Serial.println(fileIndex);
+    Serial.print("[DEBUG] - Reading=");
+    Serial.println(fileList[fileIndex]);
+  }
   if ('s' == command) {
     musicPlayer.stopPlaying();
+    Serial.println("[DEBUG] - Stopped");
   }
   if ('p' == command) {
     if (!musicPlayer.paused()) {
-      Serial.println("[DEBUG] - Paused");
       musicPlayer.pausePlaying(true);
+      Serial.println("[DEBUG] - Paused");
     } else {
-      Serial.println("[DEBUG] - Resumed");
       musicPlayer.pausePlaying(false);
+      Serial.println("[DEBUG] - Resumed");
     }
   }
 }
@@ -89,9 +101,8 @@ void updateState(char command) {
 void setup() {
   Serial.begin(9600);
 
-  Serial.println("[DEBUG] - Adafruit VS1053 Simple Test");
+  Serial.println("[DEBUG] - MP3 files Player based on Adafruit VS1053 shield");
 
-  // initialise the music player
   if (!musicPlayer.begin()) {
      Serial.println(F("[ERROR] - Couldn't find VS1053, do you have the right pins defined?"));
      while(1);
@@ -107,10 +118,6 @@ void setup() {
   // if DREQ is on an interrupt pin (on uno, #2 or #3) we can do background audio playing
   musicPlayer.useInterrupt(VS1053_FILEPLAYER_PIN_INT);  // DREQ int
 
-  // play one file, don't return until complete
-  // Serial.println(F("Playing track 001"));
-  // musicPlayer.playFullFile("track1.mp3");
-
   // set volume for left, right channels. lower numbers == louder volume!
   musicPlayer.setVolume(volume, volume);
 
@@ -123,9 +130,6 @@ void setup() {
      Serial.println(F("[DEBUG] - File not found in directory"));
      while(1);
   }
-  // begin player with track in the background, REQUIRES interrupts!
-  //Serial.println(F("[DEBUG] - Playing track1.mp3 without blocking"));
-
   Serial.print("[DEBUG] - Reading=");
   Serial.println(fileList[fileIndex]);
 
@@ -133,11 +137,6 @@ void setup() {
 }
 
 void loop() {
-  // File is playing in the background
-  if (musicPlayer.stopped()) {
-    Serial.println("[DEBUG] - Done playing music");
-    while (1);
-  }
   if (Serial.available()) {
     char c = Serial.read();
 
@@ -168,32 +167,4 @@ void createFileList() {
     entry.close();
   }
 }
-
-// file listing helper
-/*void printDirectory(File dir, int numTabs) {
-  char tracks[100];
-
-  while(true) {
-    File entry = dir.openNextFile();
-    if (! entry) {
-      // no more files
-      // Serial.println("**nomorefiles**");
-      break;
-    }
-    for (uint8_t i = 0; i < numTabs; i++) {
-      Serial.print('\t');
-    }
-    Serial.print(entry.name());
-
-    if (entry.isDirectory()) {
-      Serial.println("/");
-      printDirectory(entry, numTabs+1);
-    } else {
-      // files have sizes, directories do not
-      Serial.print("\t\t");
-      Serial.println(entry.size(), DEC);
-    }
-    entry.close();
-  }
-}*/
 
