@@ -17,7 +17,6 @@
   
   @author: Ulrich VACHON (2014)
 */
-
 // include SPI, MP3 and SD libraries
 #include <SPI.h>
 #include <Adafruit_VS1053.h>
@@ -51,20 +50,54 @@ Adafruit_VS1053_FilePlayer musicPlayer = Adafruit_VS1053_FilePlayer(SHIELD_CS, S
 
 int volume = 20;
 
+String fileList[10];
+
 void logger(char message[]) {
   Serial.println(F(""));
 }
 
+// update or decrease volume if we get an 'u' or 'd' char on the serial console
+void updateVolume(char command) {
+  if ('u' == command) {
+      volume--;
+  } else if ('d' == command) {
+    volume++;
+  } else {
+    return;
+  }
+  Serial.print("[INFO] - Volume=");
+  Serial.println(volume);
+
+  musicPlayer.setVolume(volume, volume);
+}
+
+// stop or pause read if we get an 's' or 'p' char on the serial console, 
+void updateState(char command) {
+  if ('s' == command) {
+    musicPlayer.stopPlaying();
+  }
+  if ('p' == command) {
+    if (!musicPlayer.paused()) {
+      Serial.println("[INFO] - Paused");
+      musicPlayer.pausePlaying(true);
+    } else {
+      Serial.println("[INFO] - Resumed");
+      musicPlayer.pausePlaying(false);
+    }
+  }
+}
+
 void setup() {
   Serial.begin(9600);
-  Serial.println("Adafruit VS1053 Simple Test");
+
+  Serial.println("[DEBUG] - Adafruit VS1053 Simple Test");
 
   // initialise the music player
   if (!musicPlayer.begin()) {
-     Serial.println(F("Couldn't find VS1053, do you have the right pins defined?"));
-     while (1);
+     Serial.println(F("[ERROR] - Couldn't find VS1053, do you have the right pins defined?"));
+     while(1);
   }
-  Serial.println(F("VS1053 found"));
+  Serial.println(F("[DEBUG] - VS1053 found"));
 
   // initialise the SD card
   SD.begin(CARDCS);
@@ -79,52 +112,21 @@ void setup() {
   musicPlayer.useInterrupt(VS1053_FILEPLAYER_PIN_INT);  // DREQ int
   
   // play one file, don't return until complete
-  //Serial.println(F("Playing track 001"));
-  //musicPlayer.playFullFile("track1.mp3");
+  // Serial.println(F("Playing track 001"));
+  // musicPlayer.playFullFile("track1.mp3");
 
-  printDirectory(SD.open("/"), 0);
+  createFileList();
 
   // play another file in the background, REQUIRES interrupts!
-  Serial.println(F("Playing track1.mp3 without blocking"));
+  Serial.println(F("[DEBUG] - Playing track1.mp3 without blocking"));
   musicPlayer.startPlayingFile("TRACK2.MP3");
-  Serial.println(F("Not blocking"));
-}
-
-// update or decrease volume if we get an 'u' or 'd' char on the serial console, 
-void updateVolume(char command) {
-  if ('u' == command) {
-      volume--;
-  } else if ('d' == command) {
-    volume++;
-  } else {
-    return;
-  }
-  Serial.print("Volume=");
-  Serial.println(volume);
-
-  musicPlayer.setVolume(volume, volume);
-}
-
-// stop or pause read if we get an 's' or 'p' char on the serial console, 
-void updateState(char command) {
-  if ('s' == command) {
-    musicPlayer.stopPlaying();
-  }
-  if ('p' == command) {
-    if (!musicPlayer.paused()) {
-      Serial.println("Paused");
-      musicPlayer.pausePlaying(true);
-    } else { 
-      Serial.println("Resumed");
-      musicPlayer.pausePlaying(false);
-    }
-  }
+  Serial.println(F("[DEBUG] - Not blocking"));
 }
 
 void loop() {
   // File is playing in the background
   if (musicPlayer.stopped()) {
-    Serial.println("Done playing music");
+    Serial.println("[DEBUG] - Done playing music");
     while (1);
   }
   if (Serial.available()) {
@@ -137,15 +139,34 @@ void loop() {
   delay(100);
 }
 
-/// file listing helper
-void printDirectory(File dir, int numTabs) {
+// file listing helper
+void createFileList() {
+  File root = SD.open("/");
+
+  for (int i = 0; i < 100; i++) {
+    File entry = root.openNextFile();
+
+    if (!entry) {
+      break;
+    }
+    fileList[i] = entry.name();
+
+    Serial.print("[DEBUG] - Found file=");
+    Serial.println(fileList[i]);
+
+    entry.close();
+  }
+}
+
+// file listing helper
+/*void printDirectory(File dir, int numTabs) {
   char tracks[100];
 
   while(true) {
     File entry = dir.openNextFile();
     if (! entry) {
       // no more files
-      //Serial.println("**nomorefiles**");
+      // Serial.println("**nomorefiles**");
       break;
     }
     for (uint8_t i = 0; i < numTabs; i++) {
@@ -163,5 +184,5 @@ void printDirectory(File dir, int numTabs) {
     }
     entry.close();
   }
-}
+}*/
 
