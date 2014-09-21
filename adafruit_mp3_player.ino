@@ -52,12 +52,14 @@ int fileNumber = 0;
 
 char* fileList[10];
 
-void setup() {
+void setup()
+{
   Serial.begin(9600);
 
   Serial.println(F("[DEBUG] - MP3 files Player based on Adafruit VS1053 shield"));
 
-  if (!musicPlayer.begin()) {
+  if (!musicPlayer.begin())
+  {
      Serial.println(F("[ERROR] - Couldn't find VS1053 (see the pins defined)"));
      while(1);
   }
@@ -80,7 +82,8 @@ void setup() {
   Serial.print(F("[DEBUG] - Number of file="));
   Serial.println(fileNumber);
 
-  if (!fileList[fileIndex]) {
+  if (!fileList[fileIndex])
+  {
      Serial.println(F("[DEBUG] - File not found in directory"));
      while(1);
   }
@@ -90,8 +93,10 @@ void setup() {
   musicPlayer.startPlayingFile(fileList[fileIndex]);
 }
 
-void loop() {
-  if (Serial.available()) {
+void loop()
+{
+  if (Serial.available())
+  {
     char c = Serial.read();
 
     updateVolume(c);
@@ -105,12 +110,18 @@ void loop() {
 }
 
 // update or decrease volume if needed
-void updateVolume(char command) {
-  if ('u' == command) {
+void updateVolume(char command)
+{
+  if ('u' == command)
+  {
       volume--;
-  } else if ('d' == command) {
+  }
+  else if ('d' == command)
+  {
     volume++;
-  } else {
+  }
+  else
+  {
     return;
   }
   Serial.print("[DEBUG] - Volume=");
@@ -120,24 +131,32 @@ void updateVolume(char command) {
 }
 
 // back, forward, pause or stop track if needed
-void updateState(char command) {
-  if (('b' == command) && (fileIndex > 0)) {
+void updateState(char command)
+{
+  if ('b' == command && fileIndex > 0)
+  {
     musicPlayer.startPlayingFile(fileList[--fileIndex]);
     Serial.println(F("[DEBUG] - Back command"));
   }
-  if (('f' == command) && (fileIndex < fileNumber - 1)) {
+  if ('f' == command && (fileIndex < fileNumber - 1))
+  {
     musicPlayer.startPlayingFile(fileList[++fileIndex]);
     Serial.println(F("[DEBUG] - Forward command"));
   }
-  if ('s' == command) {
+  if ('s' == command)
+  {
     musicPlayer.stopPlaying();
     Serial.println("[DEBUG] - Stopped");
   }
-  if ('p' == command) {
-    if (!musicPlayer.paused()) {
+  if ('p' == command)
+  {
+    if (!musicPlayer.paused())
+    {
       musicPlayer.pausePlaying(true);
       Serial.println(F("[DEBUG] - Paused"));
-    } else {
+    }
+    else
+    {
       musicPlayer.pausePlaying(false);
       Serial.println(F("[DEBUG] - Resumed"));
     }
@@ -145,13 +164,16 @@ void updateState(char command) {
 }
 
 // file listing helper
-void createFileList() {
+void createFileList()
+{
   File root = SD.open("/");
 
-  for (int i = 0; i < 100; i++) {
+  for (int i = 0; i < 100; i++)
+  {
     File entry = root.openNextFile();
 
-    if (!entry) {
+    if (!entry)
+    {
       break;
     }
     fileList[i] = strdup(entry.name());
