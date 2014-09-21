@@ -52,59 +52,13 @@ int fileNumber = 0;
 
 char* fileList[10];
 
-// update or decrease volume if we get an 'u' or 'd' char on the serial console
-void updateVolume(char command) {
-  if ('u' == command) {
-      volume--;
-  } else if ('d' == command) {
-    volume++;
-  } else {
-    return;
-  }
-  Serial.print("[DEBUG] - Volume=");
-  Serial.println(volume);
-
-  musicPlayer.setVolume(volume, volume);
-}
-
-// stop or pause read if we get an 's' or 'p' char on the serial console
-void updateState(char command) {
-  if (('b' == command) && (fileIndex > 0)) {
-    musicPlayer.startPlayingFile(fileList[--fileIndex]);
-    Serial.print("[DEBUG] - Back command, fileIndex=");
-    Serial.println(fileIndex);
-    Serial.print("[DEBUG] - Reading=");
-    Serial.println(fileList[fileIndex]);
-  }
-  if (('f' == command) && (fileIndex < fileNumber - 1)) {
-    musicPlayer.startPlayingFile(fileList[++fileIndex]);
-    Serial.print("[DEBUG] - Forward command, fileIndex=");
-    Serial.println(fileIndex);
-    Serial.print("[DEBUG] - Reading=");
-    Serial.println(fileList[fileIndex]);
-  }
-  if ('s' == command) {
-    musicPlayer.stopPlaying();
-    Serial.println("[DEBUG] - Stopped");
-  }
-  if ('p' == command) {
-    if (!musicPlayer.paused()) {
-      musicPlayer.pausePlaying(true);
-      Serial.println("[DEBUG] - Paused");
-    } else {
-      musicPlayer.pausePlaying(false);
-      Serial.println("[DEBUG] - Resumed");
-    }
-  }
-}
-
 void setup() {
   Serial.begin(9600);
 
-  Serial.println("[DEBUG] - MP3 files Player based on Adafruit VS1053 shield");
+  Serial.println(F("[DEBUG] - MP3 files Player based on Adafruit VS1053 shield"));
 
   if (!musicPlayer.begin()) {
-     Serial.println(F("[ERROR] - Couldn't find VS1053, do you have the right pins defined?"));
+     Serial.println(F("[ERROR] - Couldn't find VS1053 (see the pins defined)"));
      while(1);
   }
   Serial.println(F("[DEBUG] - VS1053 found"));
@@ -123,14 +77,14 @@ void setup() {
 
   createFileList();
 
-  Serial.print("[DEBUG] - Number of file=");
+  Serial.print(F("[DEBUG] - Number of file="));
   Serial.println(fileNumber);
 
   if (!fileList[fileIndex]) {
      Serial.println(F("[DEBUG] - File not found in directory"));
      while(1);
   }
-  Serial.print("[DEBUG] - Reading=");
+  Serial.print(F("[DEBUG] - Reading="));
   Serial.println(fileList[fileIndex]);
 
   musicPlayer.startPlayingFile(fileList[fileIndex]);
@@ -143,8 +97,51 @@ void loop() {
     updateVolume(c);
 
     updateState(c);
+
+    Serial.print(F("[DEBUG] - Reading="));
+    Serial.println(fileList[fileIndex]);
   }
   delay(100);
+}
+
+// update or decrease volume if needed
+void updateVolume(char command) {
+  if ('u' == command) {
+      volume--;
+  } else if ('d' == command) {
+    volume++;
+  } else {
+    return;
+  }
+  Serial.print("[DEBUG] - Volume=");
+  Serial.println(volume);
+
+  musicPlayer.setVolume(volume, volume);
+}
+
+// back, forward, pause or stop track if needed
+void updateState(char command) {
+  if (('b' == command) && (fileIndex > 0)) {
+    musicPlayer.startPlayingFile(fileList[--fileIndex]);
+    Serial.println(F("[DEBUG] - Back command"));
+  }
+  if (('f' == command) && (fileIndex < fileNumber - 1)) {
+    musicPlayer.startPlayingFile(fileList[++fileIndex]);
+    Serial.println(F("[DEBUG] - Forward command"));
+  }
+  if ('s' == command) {
+    musicPlayer.stopPlaying();
+    Serial.println("[DEBUG] - Stopped");
+  }
+  if ('p' == command) {
+    if (!musicPlayer.paused()) {
+      musicPlayer.pausePlaying(true);
+      Serial.println(F("[DEBUG] - Paused"));
+    } else {
+      musicPlayer.pausePlaying(false);
+      Serial.println(F("[DEBUG] - Resumed"));
+    }
+  }
 }
 
 // file listing helper
@@ -159,7 +156,7 @@ void createFileList() {
     }
     fileList[i] = strdup(entry.name());
 
-    Serial.print("[DEBUG] - Found file=");
+    Serial.print(F("[DEBUG] - Found file="));
     Serial.println(fileList[i]);
 
     fileNumber++;
